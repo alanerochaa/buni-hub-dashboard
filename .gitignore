@@ -1,0 +1,19 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+
+.claude
