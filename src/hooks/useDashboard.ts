@@ -14,11 +14,9 @@ export interface UseDashboardResult {
 }
 
 /**
- * Polling fixo de 30s via `refetchInterval` do React Query — não
- * depende de o usuário interagir com a página (é o próprio requisito
- * do modo TV: nenhuma ação manual necessária). `refetchIntervalInBackground`
- * garante que o polling continua mesmo com a aba em segundo plano, já
- * que este painel normalmente fica ligado numa TV, não numa aba ativa.
+ * Polling fixo de 30s, sem depender de interação (requisito do modo
+ * TV). `refetchIntervalInBackground` mantém a atualização mesmo com a
+ * aba em segundo plano.
  */
 export function useDashboard(): UseDashboardResult {
   const query = useQuery({

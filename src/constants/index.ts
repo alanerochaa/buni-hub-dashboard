@@ -1,23 +1,13 @@
 import type { DashboardResourceStatus, ResourceEnvironment, ResourceType } from '../types'
 
 /**
- * Paleta escura corporativa do Painel Operacional — escopada a este
- * projeto (nunca escrita em assets/styles/index.css como tema global),
- * para não depender de nenhuma paleta de marca de outro projeto.
+ * Paleta escura própria deste projeto (nunca em assets/styles/index.css
+ * como tema global) — hierarquia por camadas (bg → surface →
+ * surfaceElevated), nunca por saturação, referência NOC/financeira.
  *
- * Referência de tom: instrumentação financeira/NOC (Azure Monitor,
- * Grafana, Datadog, Dynatrace) — superfícies neutras e pouco
- * saturadas, hierarquia por camadas (bg → surface → surfaceElevated),
- * nunca por saturação de cor. O objetivo é transmitir estabilidade e
- * confiabilidade numa tela ligada o dia inteiro, não chamar atenção
- * para si mesma.
- *
- * Contraste validado com a skill dataviz (`validate_palette.js`):
- * `text`/`textMuted`/`textSubtle` ≥ 4.5:1 sobre `surface` e `surfaceElevated`;
- * as variantes "bright" de status ≥ 5:1 sobre ambas (texto/ícone/dado
- * de gráfico); `textFaint` fica abaixo de 4.5:1 de propósito — só para
- * elementos decorativos/não-textuais (divisores, marcas de escala),
- * nunca para texto legível.
+ * Contraste validado com a skill dataviz: `text`/`textMuted`/`textSubtle`
+ * ≥ 4.5:1 sobre `surface`/`surfaceElevated`. `textFaint` fica abaixo de
+ * propósito — só para elementos decorativos, nunca texto legível.
  */
 export const DASHBOARD_COLORS = {
   bg: '#0B0F17',
@@ -33,13 +23,22 @@ export const DASHBOARD_COLORS = {
 } as const
 
 /**
- * Cores de status — escala fixa e reservada (nunca reaproveitada como
- * cor categórica). "base" é usada em preenchimentos/fundos translúcidos
- * (baixo peso visual); "bright" é usada em texto, ícone e dado de
- * gráfico (todas ≥ 5:1 sobre `surface`/`surfaceElevated`). Tons
- * deliberadamente menos saturados que um "verde/vermelho de alerta
- * genérico" — o objetivo é comunicar estado com clareza, sem parecer
- * um alerta de jogo.
+ * Sombra única, reutilizada por todo painel de superfície (`surface`)
+ * — profundidade sutil (elevação sobre `bg`), não um efeito chamativo.
+ * Mesma sombra em todo o dashboard para manter consistência "premium"
+ * sem introduzir variação visual desnecessária entre componentes.
+ */
+export const PANEL_SHADOW =
+  '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 12px 32px -16px rgba(0,0,0,0.6)'
+
+/** Título de seção padrão — mesmo peso/tamanho em todos os painéis. */
+export const SECTION_TITLE_CLASSES = 'text-sm font-semibold tracking-wide uppercase'
+
+/**
+ * Escala fixa e reservada, nunca reaproveitada como cor categórica.
+ * "base": fundos translúcidos; "bright": texto/ícone/gráfico (≥ 5:1
+ * sobre as superfícies). Tons deliberadamente menos saturados que um
+ * alerta genérico.
  */
 export const STATUS_CONFIG: Record<
   DashboardResourceStatus,

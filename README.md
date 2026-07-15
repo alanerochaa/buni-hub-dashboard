@@ -44,13 +44,12 @@ O `dashboard/` é **só** o Painel Operacional — não tem rotas, não tem CRUD
 - **Não realiza exclusão.**
 - **Não possui persistência própria** — o único estado mantido em memória (`useAvailabilityHistory`) é um histórico de sessão, perdido a cada reload, nunca gravado em disco/`localStorage`/banco.
 
-Hierarquia de leitura da tela (de cima para baixo — um operador deve entender a situação da plataforma em até 5 segundos):
+Layout fixo em `h-screen`, sem rolagem em nenhuma dimensão — requisito obrigatório para exibição contínua em TV Full HD. Hierarquia de leitura (de cima para baixo — um operador deve entender a situação da plataforma em até 5 segundos), cada dado em exatamente um componente:
 
-1. **Estado Geral** — faixa de status (`StatusBanner`) + métricas consolidadas com composição por categoria (`MetricsRow`).
-2. **Disponibilidade** — gauge semicircular + tendência recente da sessão (`AvailabilityGauge`).
-3. **Distribuição dos Recursos** — situação agregada e por categoria, com leitura numérica completa por status (`ResourceDistribution`).
-4. **Recursos em atenção** — a tabela principal do sistema, só com recursos fora do estado saudável (`IncidentsPanel`).
-5. **Evolução do ambiente** — histórico de disponibilidade da sessão atual (`HistoryPanel`).
+1. **Estado Geral + Disponibilidade + Indicadores Principais** — faixa única (`OverviewBand`): veredito (operacional/incidente), gauge de disponibilidade e os 5 KPIs (Total/Online/Offline/Manutenção/Desconhecidos), lidos em conjunto.
+2. **Distribuição por Categoria** — qual categoria (API/Web Service/Site) foi impactada, em formato de tabela compacta (`CategoryDistributionTable`).
+3. **Recursos que Exigem Atenção** — o principal componente operacional, limitado a um número fixo de linhas visíveis para nunca depender de rolagem (`IncidentsPanel`).
+4. **Histórico de Disponibilidade** — tendência da sessão, painel pequeno e complementar ao gauge (`HistoryPanel`).
 
 ## Objetivo
 
@@ -65,10 +64,8 @@ flowchart TB
     Main["main.tsx"] --> App["App.tsx<br/>(QueryClientProvider)"]
     App --> Page["pages/DashboardPage.tsx"]
     Page --> Header["components/DashboardHeader"]
-    Page --> Banner["components/StatusBanner"]
-    Page --> Metrics["components/MetricsRow"]
-    Page --> Gauge["components/AvailabilityGauge"]
-    Page --> Dist["components/ResourceDistribution"]
+    Page --> Overview["components/OverviewBand<br/>(estado + gauge + KPIs)"]
+    Page --> Dist["components/CategoryDistributionTable"]
     Page --> Incidents["components/IncidentsPanel"]
     Page --> History["components/HistoryPanel"]
     Page --> Hook["hooks/useDashboard"]

@@ -7,10 +7,9 @@ function easeOutQuad(t: number): number {
 }
 
 /**
- * Anima a transição entre o valor exibido anterior e o novo `target`
- * (nunca de 0 até o valor — evita um "reinício" chamativo a cada
- * atualização de polling). Sem `prefers-reduced-motion`: pula direto
- * para o valor final.
+ * Anima do valor anterior até `target` (nunca a partir de 0, para não
+ * "reiniciar" a cada polling). Pula direto para o final com
+ * `prefers-reduced-motion`.
  */
 export function useCountUp(target: number): number {
   const [display, setDisplay] = useState(target)

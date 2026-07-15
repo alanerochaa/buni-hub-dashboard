@@ -3,10 +3,11 @@ import { useMemo } from 'react'
 import {
   DASHBOARD_COLORS,
   INCIDENT_STATUS_ORDER,
+  PANEL_SHADOW,
   RESOURCE_ENVIRONMENT_LABELS,
+  SECTION_TITLE_CLASSES,
   STATUS_CONFIG,
 } from '@/constants'
-import { useClock } from '@/hooks/useClock'
 import type { DashboardIncident, ResourceType } from '@/types'
 import { formatElapsed } from '@/utils/formatElapsed'
 
@@ -14,15 +15,15 @@ import { ApiIcon, ShieldCheckIcon, SiteIcon, WebServiceIcon } from './icons'
 
 export interface IncidentsPanelProps {
   incidents: DashboardIncident[]
+  now: number
   className?: string
 }
 
-const TIME_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-})
+// Cabe sem rolagem na altura reservada para este painel — o restante
+// vira um resumo agregado em vez de uma lista infinita numa tela de TV.
+const MAX_VISIBLE_ROWS = 6
+
+const TIME_FORMATTER = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 
 const TYPE_ICONS: Record<ResourceType, typeof ApiIcon> = {
   api: ApiIcon,
@@ -32,15 +33,12 @@ const TYPE_ICONS: Record<ResourceType, typeof ApiIcon> = {
 
 function AllOperationalState() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16">
+    <div className="flex flex-1 flex-col items-center justify-center gap-2">
       <span style={{ color: STATUS_CONFIG.online.bright }}>
-        <ShieldCheckIcon className="size-12" />
+        <ShieldCheckIcon className="size-9" />
       </span>
-      <p className="text-lg font-semibold" style={{ color: DASHBOARD_COLORS.text }}>
-        Todos os serviços estão operacionais
-      </p>
-      <p className="text-sm" style={{ color: DASHBOARD_COLORS.textSubtle }}>
-        Nenhum recurso exige atenção no momento.
+      <p className="text-base font-semibold" style={{ color: DASHBOARD_COLORS.text }}>
+        Todos os recursos operacionais
       </p>
     </div>
   )
@@ -50,11 +48,8 @@ function StatusBadge({ status }: { status: DashboardIncident['status'] }) {
   const config = STATUS_CONFIG[status]
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
-      style={{
-        color: config.bright,
-        backgroundColor: `${config.base}22`,
-      }}
+      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold"
+      style={{ color: config.bright, backgroundColor: `${config.base}22` }}
     >
       <span className="size-1.5 rounded-full" style={{ backgroundColor: config.bright }} />
       {config.label}
@@ -62,12 +57,6 @@ function StatusBadge({ status }: { status: DashboardIncident['status'] }) {
   )
 }
 
-/**
- * Ordem de leitura pedida (Offline → Manutenção → Desconhecido) é
- * aplicada só aqui, na apresentação — a API já devolve apenas
- * incidentes (nunca Online), essa função apenas reorganiza a mesma
- * lista para a tela, sem tocar em regra de negócio do Backend.
- */
 function sortForDisplay(incidents: DashboardIncident[]): DashboardIncident[] {
   return [...incidents].sort((a, b) => {
     const diff = INCIDENT_STATUS_ORDER.indexOf(a.status) - INCIDENT_STATUS_ORDER.indexOf(b.status)
@@ -77,33 +66,32 @@ function sortForDisplay(incidents: DashboardIncident[]): DashboardIncident[] {
 }
 
 /**
- * Item 4 da hierarquia ("Recursos em atenção") — a tabela principal
- * do sistema: recebe o maior espaço horizontal da página (largura
- * total, ver DashboardPage) e o tratamento tipográfico mais próximo
- * de um painel de Operações real — cabeçalho discreto, linhas com
- * respiro generoso, hierarquia por peso de fonte (nome em destaque,
- * metadados em tom secundário), nunca por cor além do necessário
- * (só a barra de severidade e o badge de status usam cor).
+ * Item 5 da hierarquia — o principal componente operacional. Formato
+ * de tabela compacta, com limite de linhas visíveis (`MAX_VISIBLE_ROWS`)
+ * para nunca precisar de rolagem numa tela de TV: o excedente vira um
+ * resumo agregado, não uma lista truncada silenciosamente.
  */
-export function IncidentsPanel({ incidents, className = '' }: IncidentsPanelProps) {
-  const now = useClock()
+export function IncidentsPanel({ incidents, now, className = '' }: IncidentsPanelProps) {
   const sorted = useMemo(() => sortForDisplay(incidents), [incidents])
+  const visible = sorted.slice(0, MAX_VISIBLE_ROWS)
+  const hiddenCount = sorted.length - visible.length
 
   return (
     <div
-      className={`flex min-h-0 flex-col rounded-lg p-5 ${className}`}
-      style={{ backgroundColor: DASHBOARD_COLORS.surface, border: `1px solid ${DASHBOARD_COLORS.border}` }}
+      className={`flex min-h-0 flex-col gap-3 rounded-xl p-5 ${className}`}
+      style={{
+        backgroundColor: DASHBOARD_COLORS.surface,
+        border: `1px solid ${DASHBOARD_COLORS.border}`,
+        boxShadow: PANEL_SHADOW,
+      }}
     >
-      <div className="mb-4 flex shrink-0 items-center justify-between">
-        <p
-          className="text-[0.8125rem] font-semibold tracking-wide uppercase"
-          style={{ color: DASHBOARD_COLORS.textMuted }}
-        >
+      <div className="flex shrink-0 items-center justify-between">
+        <p className={SECTION_TITLE_CLASSES} style={{ color: DASHBOARD_COLORS.textMuted }}>
           Recursos que Exigem Atenção
         </p>
         {sorted.length > 0 && (
           <span
-            className="rounded-full px-3 py-1 font-mono text-sm font-semibold tabular-nums"
+            className="rounded-full px-2.5 py-0.5 font-mono text-xs font-semibold tabular-nums"
             style={{ color: STATUS_CONFIG.offline.bright, backgroundColor: `${STATUS_CONFIG.offline.base}22` }}
           >
             {sorted.length}
@@ -114,91 +102,57 @@ export function IncidentsPanel({ incidents, className = '' }: IncidentsPanelProp
       {sorted.length === 0 ? (
         <AllOperationalState />
       ) : (
-        <div className="min-h-0 flex-1 overflow-auto">
+        <div className="flex min-h-0 flex-1 flex-col">
           <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
             <colgroup>
-              {/* Reservado para um indicador de severidade futuro (hoje
-                  o próprio status já ordena/colore a linha) — largura
-                  fixa pequena para não exigir mudança de layout quando
-                  essa coluna ganhar conteúdo. */}
-              <col style={{ width: '0.25rem' }} />
-              <col style={{ width: '2.75rem' }} />
+              <col style={{ width: '2rem' }} />
               <col />
-              <col style={{ width: '9.5rem' }} />
-              <col style={{ width: '10rem' }} />
-              <col style={{ width: '8.5rem' }} />
-              <col style={{ width: '8.5rem' }} />
+              <col style={{ width: '7rem' }} />
+              <col style={{ width: '8rem' }} />
+              <col style={{ width: '6.5rem' }} />
             </colgroup>
             <thead>
-              <tr
-                className="text-[0.6875rem] font-semibold tracking-wider uppercase"
-                style={{ color: DASHBOARD_COLORS.textFaint }}
-              >
-                <th className="sticky top-0 py-2.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }} />
-                <th className="sticky top-0 py-2.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }} />
-                <th className="sticky top-0 px-3 py-2.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
-                  Recurso
-                </th>
-                <th className="sticky top-0 px-3 py-2.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
-                  Ambiente
-                </th>
-                <th className="sticky top-0 px-3 py-2.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
-                  Status
-                </th>
-                <th className="sticky top-0 px-3 py-2.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
-                  Última verificação
-                </th>
-                <th className="sticky top-0 px-3 py-2.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
-                  Tempo offline
-                </th>
+              <tr className="text-[0.625rem] font-semibold tracking-wider uppercase" style={{ color: DASHBOARD_COLORS.textFaint }}>
+                <th className="pb-1.5" />
+                <th className="pb-1.5">Recurso</th>
+                <th className="pb-1.5">Ambiente</th>
+                <th className="pb-1.5">Status</th>
+                <th className="pb-1.5 text-right">Verificado</th>
               </tr>
             </thead>
             <tbody>
-              {sorted.map((incident) => {
+              {visible.map((incident) => {
                 const TypeIcon = TYPE_ICONS[incident.type]
-                const config = STATUS_CONFIG[incident.status]
                 return (
-                  <tr
-                    key={incident.id}
-                    className="transition-colors hover:bg-white/[0.025]"
-                    style={{ borderTop: `1px solid ${DASHBOARD_COLORS.border}` }}
-                  >
-                    <td style={{ backgroundColor: config.bright }} />
-                    <td className="px-3 py-3.5" style={{ color: DASHBOARD_COLORS.textSubtle }} title={incident.type}>
+                  <tr key={incident.id} style={{ borderTop: `1px solid ${DASHBOARD_COLORS.border}` }}>
+                    <td className="py-2" style={{ color: DASHBOARD_COLORS.textSubtle }} title={incident.type}>
                       <TypeIcon className="size-4" />
                     </td>
-                    <td
-                      className="truncate px-3 py-3.5 font-medium"
-                      style={{ color: DASHBOARD_COLORS.text }}
-                      title={incident.name}
-                    >
+                    <td className="truncate py-2 font-medium" style={{ color: DASHBOARD_COLORS.text }} title={incident.name}>
                       {incident.name}
                     </td>
-                    <td className="px-3 py-3.5" style={{ color: DASHBOARD_COLORS.textSubtle }}>
+                    <td className="py-2 text-xs" style={{ color: DASHBOARD_COLORS.textSubtle }}>
                       {RESOURCE_ENVIRONMENT_LABELS[incident.environment]}
                     </td>
-                    <td className="px-3 py-3.5">
+                    <td className="py-2">
                       <StatusBadge status={incident.status} />
                     </td>
-                    <td
-                      className="px-3 py-3.5 font-mono tabular-nums"
-                      style={{ color: DASHBOARD_COLORS.textSubtle }}
-                    >
-                      {TIME_FORMATTER.format(new Date(incident.lastCheckedAt))}
-                    </td>
-                    <td
-                      className="px-3 py-3.5 font-mono tabular-nums"
-                      style={{ color: DASHBOARD_COLORS.textSubtle }}
-                    >
+                    <td className="py-2 text-right font-mono text-xs tabular-nums" style={{ color: DASHBOARD_COLORS.textSubtle }}>
                       {incident.status === 'offline' && incident.offlineSince
-                        ? formatElapsed(new Date(incident.offlineSince).getTime(), now.getTime())
-                        : '—'}
+                        ? formatElapsed(new Date(incident.offlineSince).getTime(), now)
+                        : TIME_FORMATTER.format(new Date(incident.lastCheckedAt))}
                     </td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
+
+          {hiddenCount > 0 && (
+            <p className="mt-auto pt-2 text-center text-xs" style={{ color: DASHBOARD_COLORS.textFaint }}>
+              + {hiddenCount} recurso(s) adicional(is) com atenção necessária
+            </p>
+          )}
         </div>
       )}
     </div>

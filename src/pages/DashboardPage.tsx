@@ -1,49 +1,36 @@
-import { AvailabilityGauge } from '@/components/AvailabilityGauge'
+import { CategoryDistributionTable } from '@/components/CategoryDistributionTable'
+import { DashboardFooter } from '@/components/DashboardFooter'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { HistoryPanel } from '@/components/HistoryPanel'
 import { IncidentsPanel } from '@/components/IncidentsPanel'
-import { MetricsRow } from '@/components/MetricsRow'
-import { ResourceDistribution } from '@/components/ResourceDistribution'
-import { StatusBanner } from '@/components/StatusBanner'
+import { OverviewBand } from '@/components/OverviewBand'
 import { DASHBOARD_COLORS } from '@/constants'
 import { useAvailabilityHistory } from '@/hooks/useAvailabilityHistory'
+import { useClock } from '@/hooks/useClock'
 import { useDashboard } from '@/hooks/useDashboard'
 
 /**
- * Modo TV: tela cheia, sem Sidebar/Header institucional, sem
- * navegação — objetivo diferente de um portal de consulta/cadastro.
- * Este projeto é um frontend independente, com esta página como único
- * ponto de entrada (ver src/App.tsx).
+ * Modo TV: `h-screen overflow-hidden`, sem rolagem em nenhuma
+ * dimensão — obrigatório para Full HD (1920x1080). As duas primeiras
+ * faixas (OverviewBand, CategoryDistributionTable) têm altura fixa;
+ * a linha final (Atenção + Histórico) absorve o espaço restante via
+ * `flex-1`, com `IncidentsPanel` limitando linhas visíveis para nunca
+ * depender de scroll interno.
  *
- * Hierarquia de leitura (de cima para baixo, a ordem em que um
- * operador deve absorver a tela em até 5 segundos):
- *   1. StatusBanner + MetricsRow  — Estado Geral
- *   2. AvailabilityGauge          — Disponibilidade
- *   3. ResourceDistribution       — Distribuição dos Recursos
- *   4. IncidentsPanel             — Recursos em atenção (largura total,
- *      é a tabela principal do sistema)
- *   5. HistoryPanel               — Evolução do ambiente
- *
- * Disponibilidade e Distribuição dividem a mesma linha em telas largas
- * (>= xl) — lidas em sequência esquerda→direita, sem gastar altura de
- * tela extra à toa — mas cada uma ocupa a largura total em telas
- * estreitas, mantendo a ordem 2 antes de 3 também em notebook.
- *
- * Sem altura fixa de propósito: em Full HD/2K/4K tudo cabe numa tela
- * só; em resoluções menores a própria página rola verticalmente —
- * nunca corta conteúdo nem depende de zoom do navegador.
+ * Ordem = hierarquia de leitura, cada dado em exatamente um lugar
+ * (justificativa por item no comentário do próprio componente):
+ * OverviewBand (Estado Geral + Disponibilidade + Indicadores) →
+ * CategoryDistributionTable → IncidentsPanel + HistoryPanel.
  */
 export function DashboardPage() {
   const { data, isLoading, error, dataUpdatedAt } = useDashboard()
+  const now = useClock()
   const percentage = data ? Math.min(100, Math.max(0, data.summary.availabilityPercentage)) : 0
   const history = useAvailabilityHistory(percentage, data?.summary.lastSweepAt ?? null)
 
   if (isLoading && !data) {
     return (
-      <div
-        className="flex min-h-svh items-center justify-center"
-        style={{ backgroundColor: DASHBOARD_COLORS.bg }}
-      >
+      <div className="flex h-screen items-center justify-center" style={{ backgroundColor: DASHBOARD_COLORS.bg }}>
         <p className="text-lg" style={{ color: DASHBOARD_COLORS.textMuted }}>
           Carregando Painel Operacional…
         </p>
@@ -53,10 +40,7 @@ export function DashboardPage() {
 
   if (error && !data) {
     return (
-      <div
-        className="flex min-h-svh items-center justify-center"
-        style={{ backgroundColor: DASHBOARD_COLORS.bg }}
-      >
+      <div className="flex h-screen items-center justify-center" style={{ backgroundColor: DASHBOARD_COLORS.bg }}>
         <p className="text-lg" style={{ color: '#F0645C' }}>
           {error}
         </p>
@@ -67,26 +51,29 @@ export function DashboardPage() {
   if (!data) return null
 
   return (
-    <div className="flex min-h-svh flex-col" style={{ backgroundColor: DASHBOARD_COLORS.bg }}>
-      <DashboardHeader
-        dataUpdatedAt={dataUpdatedAt}
-        totalResources={data.summary.total}
-        offlineCount={data.summary.offline}
-      />
-      <StatusBanner summary={data.summary} />
+    <div className="flex h-screen flex-col overflow-hidden" style={{ backgroundColor: DASHBOARD_COLORS.bg }}>
+      <DashboardHeader dataUpdatedAt={dataUpdatedAt} />
 
-      <main className="flex flex-1 flex-col gap-4 px-6 py-5 lg:gap-5 lg:px-10 lg:py-6 2xl:mx-auto 2xl:w-full 2xl:max-w-[120rem]">
-        <MetricsRow summary={data.summary} />
-
-        <div className="grid grid-cols-1 gap-4 lg:gap-5 xl:grid-cols-[22rem_1fr]">
-          <AvailabilityGauge summary={data.summary} history={history} />
-          <ResourceDistribution summary={data.summary} />
+      <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-5">
+        <div className="h-[160px] shrink-0">
+          <OverviewBand summary={data.summary} />
         </div>
 
-        <IncidentsPanel incidents={data.incidents} className="min-h-[20rem] flex-1" />
+        <div className="h-[190px] shrink-0">
+          <CategoryDistributionTable summary={data.summary} />
+        </div>
 
-        <HistoryPanel points={history} />
+        <div className="flex min-h-0 flex-1 gap-4">
+          <div className="min-h-0 flex-[1.6]">
+            <IncidentsPanel incidents={data.incidents} now={now.getTime()} className="h-full" />
+          </div>
+          <div className="min-h-0 flex-1">
+            <HistoryPanel points={history} />
+          </div>
+        </div>
       </main>
+
+      <DashboardFooter />
     </div>
   )
 }
