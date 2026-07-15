@@ -27,7 +27,22 @@ Frontend React/TypeScript/Vite independente do Painel Operacional (NOC): tela ch
 
 Este projeto nasceu como uma extração de `web/` (o Portal de Serviços): originalmente o Painel Operacional era uma feature dentro do Portal; depois que o Portal ganhou um CRUD completo próprio, os dois produtos passaram a ter públicos e ritmos de deploy diferentes o suficiente para justificar frontends independentes, ambos consumindo a mesma API REST sem qualquer mudança nela.
 
-O `dashboard/` é **só** o Painel Operacional — não tem rotas, não tem CRUD, não tem navegação institucional (Header/Sidebar/Footer), não tem favoritos nem formulários. É uma aplicação de monitoramento, não uma tela administrativa: sua única responsabilidade é consumir a API e apresentar o estado operacional do ambiente. Identidade visual própria, inspirada (sem copiar layout) em ferramentas corporativas de monitoramento como Azure Monitor, Grafana, Datadog e Dynatrace — paleta escura discreta, hierarquia por camadas, sem gradientes ou cores vibrantes.
+O `dashboard/` é **só** o Painel Operacional — não tem rotas, não tem CRUD, não tem navegação institucional (Header/Sidebar/Footer), não tem favoritos nem formulários. É uma aplicação de monitoramento, não uma tela administrativa: sua única responsabilidade é consumir a API e apresentar o estado operacional do ambiente. Identidade visual própria, inspirada (sem copiar layout) em ferramentas corporativas de monitoramento como Azure Monitor, Grafana, Datadog e Dynatrace — paleta escura discreta, hierarquia por camadas, sem gradientes ou cores vibrantes. Pensado para ficar aberto continuamente em **TVs corporativas, salas de monitoramento e centros de operação (NOC)**.
+
+**Responsabilidade do Dashboard:**
+
+- Monitoramento contínuo do ambiente.
+- Indicadores consolidados (Online/Offline/Em Manutenção/Desconhecidos/Total).
+- Disponibilidade geral e tendência da sessão.
+- Recursos que exigem atenção (incidentes).
+- Atualização automática (polling de 30s), sem qualquer ação do usuário.
+
+**O que o Dashboard explicitamente não faz:**
+
+- **Não realiza cadastro.**
+- **Não realiza edição.**
+- **Não realiza exclusão.**
+- **Não possui persistência própria** — o único estado mantido em memória (`useAvailabilityHistory`) é um histórico de sessão, perdido a cada reload, nunca gravado em disco/`localStorage`/banco.
 
 Hierarquia de leitura da tela (de cima para baixo — um operador deve entender a situação da plataforma em até 5 segundos):
 
