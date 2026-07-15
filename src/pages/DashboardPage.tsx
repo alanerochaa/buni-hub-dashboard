@@ -10,12 +10,17 @@ import { useClock } from '@/hooks/useClock'
 import { useDashboard } from '@/hooks/useDashboard'
 
 /**
- * Modo TV: `h-screen overflow-hidden`, sem rolagem em nenhuma
- * dimensão — obrigatório para Full HD (1920x1080). As duas primeiras
- * faixas (OverviewBand, CategoryDistributionTable) têm altura fixa;
- * a linha final (Atenção + Histórico) absorve o espaço restante via
- * `flex-1`, com `IncidentsPanel` limitando linhas visíveis para nunca
- * depender de scroll interno.
+ * Modo TV: `h-screen overflow-hidden` na página — sem rolagem da tela
+ * como um todo. As duas primeiras faixas (OverviewBand,
+ * CategoryDistributionTable) têm altura fixa; a linha final (Atenção +
+ * Histórico) absorve o espaço restante. Essa linha usa CSS Grid (não
+ * flex) para os dois cards ficarem sempre com a mesma altura — grid
+ * sincroniza a altura da linha entre as colunas de forma mais
+ * previsível que flex + `h-full` encadeado, especialmente com um
+ * `<table>` dentro (que tem sizing próprio e pode "empurrar" a altura
+ * do container). `IncidentsPanel` rola internamente quando há mais
+ * recursos do que cabem; `HistoryPanel` cresce para preencher o
+ * espaço da coluna.
  *
  * Ordem = hierarquia de leitura, cada dado em exatamente um lugar
  * (justificativa por item no comentário do próprio componente):
@@ -63,11 +68,11 @@ export function DashboardPage() {
           <CategoryDistributionTable summary={data.summary} />
         </div>
 
-        <div className="flex min-h-0 flex-1 gap-4">
-          <div className="min-h-0 flex-[1.6]">
+        <div className="grid min-h-0 flex-1 grid-cols-[1.6fr_1fr] gap-4">
+          <div className="min-h-0">
             <IncidentsPanel incidents={data.incidents} now={now.getTime()} className="h-full" />
           </div>
-          <div className="min-h-0 flex-1">
+          <div className="min-h-0">
             <HistoryPanel points={history} />
           </div>
         </div>

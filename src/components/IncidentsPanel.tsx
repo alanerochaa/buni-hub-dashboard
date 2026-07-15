@@ -19,10 +19,6 @@ export interface IncidentsPanelProps {
   className?: string
 }
 
-// Cabe sem rolagem na altura reservada para este painel — o restante
-// vira um resumo agregado em vez de uma lista infinita numa tela de TV.
-const MAX_VISIBLE_ROWS = 6
-
 const TIME_FORMATTER = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 
 const TYPE_ICONS: Record<ResourceType, typeof ApiIcon> = {
@@ -66,19 +62,20 @@ function sortForDisplay(incidents: DashboardIncident[]): DashboardIncident[] {
 }
 
 /**
- * Item 5 da hierarquia — o principal componente operacional. Formato
- * de tabela compacta, com limite de linhas visíveis (`MAX_VISIBLE_ROWS`)
- * para nunca precisar de rolagem numa tela de TV: o excedente vira um
- * resumo agregado, não uma lista truncada silenciosamente.
+ * Item 5 da hierarquia — o principal componente operacional. Mostra
+ * *todos* os recursos que exigem atenção — cabeçalho do painel e
+ * contador ficam fixos (`shrink-0`), só a lista rola internamente
+ * (`overflow-y-auto`), com o cabeçalho da tabela `sticky` durante o
+ * scroll. O `<table>` fica dentro de um contêiner com altura
+ * explicitamente limitada, para não deixar o conteúdo esticar o card
+ * inteiro (comportamento padrão de `<table>` dentro de flex/grid).
  */
 export function IncidentsPanel({ incidents, now, className = '' }: IncidentsPanelProps) {
   const sorted = useMemo(() => sortForDisplay(incidents), [incidents])
-  const visible = sorted.slice(0, MAX_VISIBLE_ROWS)
-  const hiddenCount = sorted.length - visible.length
 
   return (
     <div
-      className={`flex min-h-0 flex-col gap-3 rounded-xl p-5 ${className}`}
+      className={`flex min-h-0 flex-col gap-3 overflow-hidden rounded-xl p-5 ${className}`}
       style={{
         backgroundColor: DASHBOARD_COLORS.surface,
         border: `1px solid ${DASHBOARD_COLORS.border}`,
@@ -102,7 +99,7 @@ export function IncidentsPanel({ incidents, now, className = '' }: IncidentsPane
       {sorted.length === 0 ? (
         <AllOperationalState />
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
           <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
             <colgroup>
               <col style={{ width: '2rem' }} />
@@ -113,15 +110,23 @@ export function IncidentsPanel({ incidents, now, className = '' }: IncidentsPane
             </colgroup>
             <thead>
               <tr className="text-[0.625rem] font-semibold tracking-wider uppercase" style={{ color: DASHBOARD_COLORS.textFaint }}>
-                <th className="pb-1.5" />
-                <th className="pb-1.5">Recurso</th>
-                <th className="pb-1.5">Ambiente</th>
-                <th className="pb-1.5">Status</th>
-                <th className="pb-1.5 text-right">Verificado</th>
+                <th className="sticky top-0 pb-1.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }} />
+                <th className="sticky top-0 pb-1.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
+                  Recurso
+                </th>
+                <th className="sticky top-0 pb-1.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
+                  Ambiente
+                </th>
+                <th className="sticky top-0 pb-1.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
+                  Status
+                </th>
+                <th className="sticky top-0 pb-1.5 text-right" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
+                  Verificado
+                </th>
               </tr>
             </thead>
             <tbody>
-              {visible.map((incident) => {
+              {sorted.map((incident) => {
                 const TypeIcon = TYPE_ICONS[incident.type]
                 return (
                   <tr key={incident.id} style={{ borderTop: `1px solid ${DASHBOARD_COLORS.border}` }}>
@@ -147,12 +152,6 @@ export function IncidentsPanel({ incidents, now, className = '' }: IncidentsPane
               })}
             </tbody>
           </table>
-
-          {hiddenCount > 0 && (
-            <p className="mt-auto pt-2 text-center text-xs" style={{ color: DASHBOARD_COLORS.textFaint }}>
-              + {hiddenCount} recurso(s) adicional(is) com atenção necessária
-            </p>
-          )}
         </div>
       )}
     </div>
