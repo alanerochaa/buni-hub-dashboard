@@ -41,3 +41,24 @@ export interface DashboardResponse {
   summary: DashboardSummary
   incidents: DashboardIncident[]
 }
+
+/**
+ * Espelha api/src/models/history.model.ts (HistorySnapshot) — Histórico
+ * Operacional, persistido pelo Backend em `history.json` a cada sweep
+ * do Health Check (ver GET /dashboard/history).
+ */
+export interface HistorySnapshot {
+  timestamp: string
+  total: number
+  online: number
+  offline: number
+  maintenance: number
+  unknown: number
+  availabilityPercentage: number
+}
+
+/** Forma consumida por HistoryPanel — `timestamp` já em milissegundos. */
+export interface AvailabilityPoint {
+  timestamp: number
+  value: number
+}

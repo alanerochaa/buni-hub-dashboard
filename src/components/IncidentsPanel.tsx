@@ -5,6 +5,7 @@ import {
   INCIDENT_STATUS_ORDER,
   PANEL_SHADOW,
   RESOURCE_ENVIRONMENT_LABELS,
+  RESOURCE_TYPE_LABELS,
   SECTION_TITLE_CLASSES,
   STATUS_CONFIG,
 } from '@/constants'
@@ -12,6 +13,7 @@ import type { DashboardIncident, ResourceType } from '@/types'
 import { formatElapsed } from '@/utils/formatElapsed'
 
 import { ApiIcon, ShieldCheckIcon, SiteIcon, WebServiceIcon } from './icons'
+import { IconChip } from './IconChip'
 
 export interface IncidentsPanelProps {
   incidents: DashboardIncident[]
@@ -44,8 +46,8 @@ function StatusBadge({ status }: { status: DashboardIncident['status'] }) {
   const config = STATUS_CONFIG[status]
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold"
-      style={{ color: config.bright, backgroundColor: `${config.base}22` }}
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+      style={{ color: config.bright, backgroundColor: `${config.base}1f`, border: `1px solid ${config.base}40` }}
     >
       <span className="size-1.5 rounded-full" style={{ backgroundColor: config.bright }} />
       {config.label}
@@ -62,20 +64,23 @@ function sortForDisplay(incidents: DashboardIncident[]): DashboardIncident[] {
 }
 
 /**
- * Item 5 da hierarquia — o principal componente operacional. Mostra
- * *todos* os recursos que exigem atenção — cabeçalho do painel e
- * contador ficam fixos (`shrink-0`), só a lista rola internamente
- * (`overflow-y-auto`), com o cabeçalho da tabela `sticky` durante o
- * scroll. O `<table>` fica dentro de um contêiner com altura
- * explicitamente limitada, para não deixar o conteúdo esticar o card
- * inteiro (comportamento padrão de `<table>` dentro de flex/grid).
+ * Item 5 da hierarquia — o principal componente operacional. Modo TV:
+ * sem rolagem, nunca. A altura do card é dada pelo Grid da página (ver
+ * `DashboardPage`) — normalmente definida pelo `HistoryPanel` ao lado,
+ * já que a tabela costuma ser mais baixa (poucos incidentes). Por isso
+ * o conteúdo é centralizado verticalmente (`justify-center`) em vez de
+ * esticado do topo: com poucas linhas, sobra espaço acima/abaixo da
+ * tabela — centralizar looks deliberado; esticar a tabela deixaria um
+ * vazio grande só embaixo. `overflow-hidden` continua como rede de
+ * segurança para um número atípico de incidentes (corta em vez de
+ * rolar), não como comportamento normal.
  */
 export function IncidentsPanel({ incidents, now, className = '' }: IncidentsPanelProps) {
   const sorted = useMemo(() => sortForDisplay(incidents), [incidents])
 
   return (
     <div
-      className={`flex min-h-0 flex-col gap-3 overflow-hidden rounded-xl p-5 ${className}`}
+      className={`flex min-h-0 flex-col gap-2 overflow-hidden rounded-xl p-4 ${className}`}
       style={{
         backgroundColor: DASHBOARD_COLORS.surface,
         border: `1px solid ${DASHBOARD_COLORS.border}`,
@@ -99,30 +104,24 @@ export function IncidentsPanel({ incidents, now, className = '' }: IncidentsPane
       {sorted.length === 0 ? (
         <AllOperationalState />
       ) : (
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-          <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
+        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden">
+          <table className="w-full table-fixed border-separate border-spacing-0 text-left">
             <colgroup>
-              <col style={{ width: '2rem' }} />
+              <col style={{ width: '2.25rem' }} />
               <col />
               <col style={{ width: '7rem' }} />
-              <col style={{ width: '8rem' }} />
+              <col style={{ width: '7.5rem' }} />
+              <col style={{ width: '7.5rem' }} />
               <col style={{ width: '6.5rem' }} />
             </colgroup>
             <thead>
               <tr className="text-[0.625rem] font-semibold tracking-wider uppercase" style={{ color: DASHBOARD_COLORS.textFaint }}>
-                <th className="sticky top-0 pb-1.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }} />
-                <th className="sticky top-0 pb-1.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
-                  Recurso
-                </th>
-                <th className="sticky top-0 pb-1.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
-                  Ambiente
-                </th>
-                <th className="sticky top-0 pb-1.5" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
-                  Status
-                </th>
-                <th className="sticky top-0 pb-1.5 text-right" style={{ backgroundColor: DASHBOARD_COLORS.surface }}>
-                  Verificado
-                </th>
+                <th className="pb-2" />
+                <th className="pb-2">Recurso</th>
+                <th className="pb-2">Tipo</th>
+                <th className="pb-2">Ambiente</th>
+                <th className="pb-2">Status</th>
+                <th className="pb-2 text-right">Tempo</th>
               </tr>
             </thead>
             <tbody>
@@ -130,19 +129,27 @@ export function IncidentsPanel({ incidents, now, className = '' }: IncidentsPane
                 const TypeIcon = TYPE_ICONS[incident.type]
                 return (
                   <tr key={incident.id} style={{ borderTop: `1px solid ${DASHBOARD_COLORS.border}` }}>
-                    <td className="py-2" style={{ color: DASHBOARD_COLORS.textSubtle }} title={incident.type}>
-                      <TypeIcon className="size-4" />
+                    <td className="py-2.5" title={incident.type}>
+                      <IconChip size="sm">
+                        <TypeIcon className="size-3" />
+                      </IconChip>
                     </td>
-                    <td className="truncate py-2 font-medium" style={{ color: DASHBOARD_COLORS.text }} title={incident.name}>
+                    <td className="truncate py-2.5 text-sm font-semibold" style={{ color: DASHBOARD_COLORS.text }} title={incident.name}>
                       {incident.name}
                     </td>
-                    <td className="py-2 text-xs" style={{ color: DASHBOARD_COLORS.textSubtle }}>
+                    <td className="py-2.5">
+                      <span className="inline-flex items-center gap-1.5 text-xs" style={{ color: DASHBOARD_COLORS.textSubtle }}>
+                        <TypeIcon className="size-3" />
+                        {RESOURCE_TYPE_LABELS[incident.type]}
+                      </span>
+                    </td>
+                    <td className="py-2.5 text-xs" style={{ color: DASHBOARD_COLORS.textSubtle }}>
                       {RESOURCE_ENVIRONMENT_LABELS[incident.environment]}
                     </td>
-                    <td className="py-2">
+                    <td className="py-2.5">
                       <StatusBadge status={incident.status} />
                     </td>
-                    <td className="py-2 text-right font-mono text-xs tabular-nums" style={{ color: DASHBOARD_COLORS.textSubtle }}>
+                    <td className="py-2.5 text-right font-mono text-xs tabular-nums" style={{ color: DASHBOARD_COLORS.textSubtle }}>
                       {incident.status === 'offline' && incident.offlineSince
                         ? formatElapsed(new Date(incident.offlineSince).getTime(), now)
                         : TIME_FORMATTER.format(new Date(incident.lastCheckedAt))}

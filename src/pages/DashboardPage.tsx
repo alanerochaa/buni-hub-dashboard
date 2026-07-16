@@ -5,33 +5,31 @@ import { HistoryPanel } from '@/components/HistoryPanel'
 import { IncidentsPanel } from '@/components/IncidentsPanel'
 import { OverviewBand } from '@/components/OverviewBand'
 import { DASHBOARD_COLORS } from '@/constants'
-import { useAvailabilityHistory } from '@/hooks/useAvailabilityHistory'
 import { useClock } from '@/hooks/useClock'
 import { useDashboard } from '@/hooks/useDashboard'
+import { useOperationalHistory } from '@/hooks/useOperationalHistory'
 
 /**
- * Modo TV: `h-screen overflow-hidden` na página — sem rolagem da tela
- * como um todo. As duas primeiras faixas (OverviewBand,
- * CategoryDistributionTable) têm altura fixa; a linha final (Atenção +
- * Histórico) absorve o espaço restante. Essa linha usa CSS Grid (não
- * flex) para os dois cards ficarem sempre com a mesma altura — grid
- * sincroniza a altura da linha entre as colunas de forma mais
- * previsível que flex + `h-full` encadeado, especialmente com um
- * `<table>` dentro (que tem sizing próprio e pode "empurrar" a altura
- * do container). `IncidentsPanel` rola internamente quando há mais
- * recursos do que cabem; `HistoryPanel` cresce para preencher o
- * espaço da coluna.
+ * Modo TV: `h-screen overflow-hidden` na página — nenhuma rolagem em
+ * lugar nenhum (requisito de NOC: tudo visível sem interação). Três
+ * linhas, de cima para baixo:
  *
- * Ordem = hierarquia de leitura, cada dado em exatamente um lugar
- * (justificativa por item no comentário do próprio componente):
- * OverviewBand (Estado Geral + Disponibilidade + Indicadores) →
- * CategoryDistributionTable → IncidentsPanel + HistoryPanel.
+ * 1. `OverviewBand` — faixa de KPIs compacta, altura fixa.
+ * 2. `IncidentsPanel` (~60%) + `HistoryPanel` (~40%) lado a lado, em
+ *    CSS Grid: a altura da linha é dada pelo maior dos dois — hoje o
+ *    Histórico (que tem uma altura mínima própria, generosa, para o
+ *    gráfico ter prioridade visual); `IncidentsPanel` estica para
+ *    acompanhar via `align-items: stretch` (padrão do Grid) e
+ *    centraliza sua tabela verticalmente quando há poucos incidentes.
+ * 3. `CategoryDistributionTable` — a única linha com `flex-1`: absorve
+ *    todo o espaço vertical que sobrar depois das duas linhas acima,
+ *    para a tela ficar sempre preenchida até o rodapé, sem vazio morto,
+ *    em qualquer altura de viewport.
  */
 export function DashboardPage() {
   const { data, isLoading, error, dataUpdatedAt } = useDashboard()
   const now = useClock()
-  const percentage = data ? Math.min(100, Math.max(0, data.summary.availabilityPercentage)) : 0
-  const history = useAvailabilityHistory(percentage, data?.summary.lastSweepAt ?? null)
+  const { points: history } = useOperationalHistory()
 
   if (isLoading && !data) {
     return (
@@ -59,22 +57,18 @@ export function DashboardPage() {
     <div className="flex h-screen flex-col overflow-hidden" style={{ backgroundColor: DASHBOARD_COLORS.bg }}>
       <DashboardHeader dataUpdatedAt={dataUpdatedAt} />
 
-      <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-5">
-        <div className="h-[160px] shrink-0">
+      <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
+        <div className="h-[112px] shrink-0">
           <OverviewBand summary={data.summary} />
         </div>
 
-        <div className="h-[190px] shrink-0">
-          <CategoryDistributionTable summary={data.summary} />
+        <div className="grid shrink-0 grid-cols-[3fr_2fr] gap-4">
+          <IncidentsPanel incidents={data.incidents} now={now.getTime()} className="h-full" />
+          <HistoryPanel points={history} />
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-[1.6fr_1fr] gap-4">
-          <div className="min-h-0">
-            <IncidentsPanel incidents={data.incidents} now={now.getTime()} className="h-full" />
-          </div>
-          <div className="min-h-0">
-            <HistoryPanel points={history} />
-          </div>
+        <div className="min-h-0 flex-1">
+          <CategoryDistributionTable summary={data.summary} />
         </div>
       </main>
 

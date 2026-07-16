@@ -10,6 +10,7 @@ Frontend React/TypeScript/Vite independente do Painel Operacional (NOC): tela ch
 
 - [Visão geral](#visão-geral)
 - [Objetivo](#objetivo)
+- [Componentes do Dashboard](#componentes-do-dashboard)
 - [Arquitetura](#arquitetura)
 - [Stack tecnológica](#stack-tecnológica)
 - [Estrutura de diretórios](#estrutura-de-diretórios)
@@ -33,8 +34,9 @@ O `dashboard/` é **só** o Painel Operacional — não tem rotas, não tem CRUD
 
 - Monitoramento contínuo do ambiente.
 - Indicadores consolidados (Online/Offline/Em Manutenção/Desconhecidos/Total).
-- Disponibilidade geral e tendência da sessão.
+- Disponibilidade geral e tendência operacional ao longo do tempo.
 - Recursos que exigem atenção (incidentes).
+- Distribuição do catálogo por categoria (API/Web Service/Site).
 - Atualização automática (polling de 30s), sem qualquer ação do usuário.
 
 **O que o Dashboard explicitamente não faz:**
@@ -42,18 +44,57 @@ O `dashboard/` é **só** o Painel Operacional — não tem rotas, não tem CRUD
 - **Não realiza cadastro.**
 - **Não realiza edição.**
 - **Não realiza exclusão.**
-- **Não possui persistência própria** — o único estado mantido em memória (`useAvailabilityHistory`) é um histórico de sessão, perdido a cada reload, nunca gravado em disco/`localStorage`/banco.
+- **Não possui persistência própria** — o Histórico de Disponibilidade não é mais mantido em memória do navegador; é o **Histórico Operacional** persistido pela `api/` (`GET /dashboard/history`, gravado em `history.json` a cada sweep do Health Check). Nada aqui se perde ao recarregar a página.
 
-Layout fixo em `h-screen`, sem rolagem em nenhuma dimensão — requisito obrigatório para exibição contínua em TV Full HD. Hierarquia de leitura (de cima para baixo — um operador deve entender a situação da plataforma em até 5 segundos), cada dado em exatamente um componente:
+Layout fixo em `h-screen`, sem rolagem em nenhuma dimensão — requisito obrigatório para exibição contínua em TV Full HD. Três linhas, cada dado em exatamente um componente (detalhe de cada um em [Componentes do Dashboard](#componentes-do-dashboard)):
 
-1. **Estado Geral + Disponibilidade + Indicadores Principais** — faixa única (`OverviewBand`): veredito (operacional/incidente), gauge de disponibilidade e os 5 KPIs (Total/Online/Offline/Manutenção/Desconhecidos), lidos em conjunto.
-2. **Distribuição por Categoria** — qual categoria (API/Web Service/Site) foi impactada, em formato de tabela compacta (`CategoryDistributionTable`).
-3. **Recursos que Exigem Atenção** — o principal componente operacional, limitado a um número fixo de linhas visíveis para nunca depender de rolagem (`IncidentsPanel`).
-4. **Histórico de Disponibilidade** — tendência da sessão, painel pequeno e complementar ao gauge (`HistoryPanel`).
+1. **Status Geral e Indicadores** (`OverviewBand`) — faixa única com 7 células: Ambiente Operacional, Disponibilidade Geral (gauge) e 5 cards de indicador (Total/Online/Offline/Manutenção/Desconhecidos).
+2. **Recursos que Exigem Atenção** (`IncidentsPanel`) e **Histórico de Disponibilidade** (`HistoryPanel`), lado a lado — a linha que mais espaço ocupa, por concentrar as duas informações mais consultadas por um operador.
+3. **Distribuição por Categoria** (`CategoryDistributionTable`) — tabela em largura total, por último: contagem e disponibilidade por tipo de recurso.
 
 ## Objetivo
 
 Dar à equipe de operações uma tela única, sempre atualizada, que responda "existe algo fora do ar agora?" em poucos segundos — sem exigir login, sem navegação, sem depender do Portal de Serviços estar aberto.
+
+## Componentes do Dashboard
+
+`DashboardPage` renderiza três linhas dentro de `<main>` (ver [Arquitetura](#arquitetura) para o diagrama de componentes) — a ordem abaixo é a ordem real de cima para baixo na tela.
+
+### Status Geral e Disponibilidade
+
+As duas primeiras células de `OverviewBand`, lado a lado:
+
+- **Ambiente Operacional** — veredito textual, nunca numérico: `summary.offline === 0` decide entre "Ambiente Operacional" (verde, "Todos os sistemas funcionando normalmente.") e "Incidente em Andamento" (vermelho, "N recurso(s) offline"). Não é um contador — é a resposta imediata a "está tudo bem?".
+- **Disponibilidade Geral** (`AvailabilityGauge`) — gauge semicircular com `summary.availabilityPercentage`, cor dinâmica (verde ≥ 99%, âmbar ≥ 95%, vermelho abaixo disso) e a legenda fixa "Meta: ≥ 95%" abaixo do percentual.
+
+### Cards de indicadores
+
+Os outros 5 KPIs da mesma faixa (`MetricCard`, um componente reutilizado 5 vezes): **Total de Recursos**, **Recursos Online**, **Recursos Offline**, **Em Manutenção** e **Desconhecidos**. Cada card mostra ícone, valor absoluto (com animação de contagem via `useCountUp`, nunca reiniciando do zero a cada polling) e, abaixo, o percentual sobre o total (`100% do total` para o card Total; percentual real para os demais). O card Offline recebe destaque visual (fundo/borda tingidos) sempre que `offline > 0`.
+
+### Recursos que Exigem Atenção
+
+`IncidentsPanel` — tabela com os recursos cujo status consolidado não é `online` (`data.incidents`, já filtrado e ordenado pela API: offline primeiro, depois manutenção, depois desconhecido, cada grupo em ordem alfabética). Colunas: ícone de tipo, Recurso, Tipo, Ambiente, Status (badge colorido com indicador circular) e Tempo — tempo decorrido desde que ficou offline (`offlineSince`) quando aplicável, ou o horário da última verificação. Sem paginação, sem botão de ação: todas as linhas renderizam de uma vez, compactadas para nunca depender de rolagem (requisito de TV). Quando não há nenhum incidente, mostra um estado de sucesso ("Todos os recursos operacionais").
+
+### Histórico de Disponibilidade
+
+`HistoryPanel` — gráfico de área/linha construído em SVG puro (sem biblioteca de gráficos), com:
+
+- Grade horizontal em múltiplos de 5% (eixo Y), com piso em 80% — só desce abaixo disso se a série de dados exigir.
+- Marcações de data no eixo X, deduplicadas quando várias caem no mesmo dia (janela de dados curta não repete o mesmo rótulo várias vezes).
+- Cor da linha/área conforme o valor mais recente (mesma regra de cor do gauge).
+- Legenda "Disponibilidade" e um seletor discreto "Últimos 7 dias" no canto superior direito. **Este seletor é apenas visual** — não filtra nem dispara nenhuma requisição; a série exibida é sempre o histórico completo que `GET /dashboard/history` devolve, cuja janela real depende do intervalo de sweep e do limite de retenção configurados na `api/` (não necessariamente 7 dias — ver [`api/README.md`](../api/README.md#crescimento-controlado--histórico-e-log-sem-crescimento-ilimitado)).
+
+### Distribuição por Categoria
+
+`CategoryDistributionTable` — única linha em largura total, por último na hierarquia de leitura. Uma linha por tipo de recurso (APIs, Web Services, Sites) com Total, Online, Offline, Manutenção, Desconhecidos e Disponibilidade (barra horizontal + percentual ao lado).
+
+### Atualização automática
+
+Não há botão de atualizar, nem qualquer outra interação do usuário. `useDashboard()` e `useOperationalHistory()` fazem polling independente a cada 30 segundos (`refetchInterval: 30_000`, `refetchIntervalInBackground: true`) — a tela se mantém atualizada mesmo em segundo plano ou sem foco, como uma TV exige.
+
+### Relação entre Dashboard, API e Histórico Operacional
+
+O Dashboard é **só leitura** — nunca grava nada. `GET /dashboard` devolve o estado *atual* (resumo consolidado + incidentes), recalculado pela `api/` a cada requisição a partir do último sweep do Health Check. `GET /dashboard/history` devolve o **Histórico Operacional**: uma série de snapshots já persistidos pela `api/` em `history.json`, um por sweep, independente de o Dashboard estar aberto ou não. Ver [`api/README.md`](../api/README.md#histórico-operacional-e-log-operacional) para o fluxo completo de geração e persistência desse histórico.
 
 ## Arquitetura
 
@@ -64,16 +105,25 @@ flowchart TB
     Main["main.tsx"] --> App["App.tsx<br/>(QueryClientProvider)"]
     App --> Page["pages/DashboardPage.tsx"]
     Page --> Header["components/DashboardHeader"]
-    Page --> Overview["components/OverviewBand<br/>(estado + gauge + KPIs)"]
-    Page --> Dist["components/CategoryDistributionTable"]
+    Page --> Overview["components/OverviewBand<br/>(Ambiente Operacional + Gauge + 5 MetricCard)"]
+    Overview --> Gauge["components/AvailabilityGauge"]
+    Overview --> Metric["components/MetricCard × 5"]
     Page --> Incidents["components/IncidentsPanel"]
     Page --> History["components/HistoryPanel"]
+    Page --> Dist["components/CategoryDistributionTable"]
+    Incidents --> Chip["components/IconChip"]
+    Dist --> Chip
+    Page --> Footer["components/DashboardFooter"]
     Page --> Hook["hooks/useDashboard"]
-    Page --> HistHook["hooks/useAvailabilityHistory"]
+    Page --> HistHook["hooks/useOperationalHistory"]
     Hook --> Svc["services/dashboard.service.ts"]
+    HistHook --> HistSvc["services/history.service.ts"]
     Svc --> Axios["lib/axios.ts"]
+    HistSvc --> Axios
     Axios --> API[("api/ — REST")]
 ```
+
+Ordem real de renderização dentro de `<main>` (de cima para baixo): `OverviewBand` → grade de duas colunas (`IncidentsPanel` + `HistoryPanel`) → `CategoryDistributionTable` — ver [Componentes do Dashboard](#componentes-do-dashboard) para o detalhe de cada um.
 
 Todo componente visual usa a paleta escura própria (`constants/index.ts` → `DASHBOARD_COLORS`/`STATUS_CONFIG`) via `style` inline — não há tema de marca do Portal aqui; o Tailwind é usado só para utilitários de layout (`flex`, `rounded-xl`, `font-mono` etc.), sem tokens customizados.
 
@@ -102,15 +152,25 @@ dashboard/
 │   ├── assets/
 │   │   ├── images/                 # logo institucional
 │   │   └── styles/index.css        # `@import 'tailwindcss';`, sem tema
-│   ├── components/                 # componentes visuais do Painel + ícones locais
-│   ├── hooks/                      # useDashboard, useClock, useCountUp, useAvailabilityHistory
+│   ├── components/
+│   │   ├── DashboardHeader.tsx  DashboardFooter.tsx  Logo.tsx
+│   │   ├── OverviewBand.tsx        # Ambiente Operacional + Disponibilidade Geral + 5 MetricCard
+│   │   ├── MetricCard.tsx  AvailabilityGauge.tsx
+│   │   ├── IncidentsPanel.tsx      # Recursos que Exigem Atenção
+│   │   ├── HistoryPanel.tsx        # Histórico de Disponibilidade (gráfico SVG com eixos)
+│   │   ├── CategoryDistributionTable.tsx
+│   │   ├── IconChip.tsx            # ícone de tipo em chip, reaproveitado por Incidents/CategoryDistribution
+│   │   └── icons.tsx                # ícones SVG locais (tipo de recurso, status, ações)
+│   ├── hooks/                      # useDashboard, useOperationalHistory, useClock, useCountUp
 │   ├── pages/
 │   │   └── DashboardPage.tsx       # única página da aplicação
 │   ├── services/
-│   │   └── dashboard.service.ts    # getDashboard() — GET /dashboard
+│   │   ├── dashboard.service.ts    # getDashboard() — GET /dashboard
+│   │   └── history.service.ts      # getHistory() — GET /dashboard/history
 │   ├── types/                      # DashboardSummary/Incident/Response + ResourceType/ResourceEnvironment
 │   ├── utils/
-│   │   └── formatElapsed.ts
+│   │   ├── formatElapsed.ts        # "há N segundos/minutos/horas"
+│   │   └── resolveEnvironmentLabel.ts # ambiente monitorado, a partir de VITE_API_BASE_URL
 │   ├── constants/                  # paleta escura, status, rótulos de tipo/ambiente
 │   ├── lib/                        # axios.ts, apiErrorMessage.ts, httpStatusMessages.ts, errors.ts, queryClient.ts
 │   ├── config/
@@ -132,8 +192,9 @@ Todos servidos pela `api/`, sem nenhum endpoint novo ou alterado por conta deste
 | Método | Rota | Uso neste projeto |
 |---|---|---|
 | `GET` | `/dashboard` | Consumido por `useDashboard()` — `{ summary, incidents }` combinados, com polling de 30s |
+| `GET` | `/dashboard/history` | Consumido por `useOperationalHistory()` — snapshots de disponibilidade persistidos, com polling de 30s |
 
-`/dashboard/summary` e `/dashboard/incidents` também existem na API (consumo isolado de cada parte), mas este projeto usa a rota combinada `/dashboard` para uma única requisição por ciclo de polling.
+`/dashboard/summary`, `/dashboard/incidents` e `/dashboard/events` (Log Operacional — eventos detalhados e auditoria, distinto do Histórico Operacional consumido aqui) também existem na API, mas não são consumidos por este projeto hoje — o Painel usa a rota combinada `/dashboard` para o estado atual, e `/dashboard/history` para a tendência. O Log Operacional é consumido pelo Portal (`web/`), na tela "Log Operacional".
 
 ## Fluxo dos Dados
 
@@ -144,13 +205,15 @@ dashboard (React)
    ↓
 API REST
    ↓
-/dashboard, /dashboard/summary, /dashboard/incidents
+/dashboard, /dashboard/history
 ```
 
-1. `DashboardPage` monta e `useDashboard()` dispara a primeira busca via `services/dashboard.service.ts`.
-2. `services/dashboard.service.ts` chama `GET /dashboard` através da instância Axios (`lib/axios.ts`).
-3. A resposta popula os componentes visuais (métricas, disponibilidade, gráficos, incidentes).
-4. `refetchInterval: 30_000` (com `refetchIntervalInBackground: true`) repete o ciclo indefinidamente, sem ação do usuário — é o próprio requisito do modo TV.
+1. `DashboardPage` monta e dois hooks disparam a primeira busca em paralelo: `useDashboard()` (estado atual) e `useOperationalHistory()` (tendência).
+2. `services/dashboard.service.ts` chama `GET /dashboard`; `services/history.service.ts` chama `GET /dashboard/history` — ambos pela mesma instância Axios (`lib/axios.ts`).
+3. A resposta popula os componentes visuais (métricas, disponibilidade, gráficos, incidentes, histórico).
+4. Cada hook tem seu próprio `refetchInterval: 30_000` (com `refetchIntervalInBackground: true`), repetindo o ciclo indefinidamente, sem ação do usuário — é o próprio requisito do modo TV.
+
+**Histórico Operacional**: `useOperationalHistory()` não acumula nada em memória do navegador — cada resposta de `GET /dashboard/history` já vem completa e persistida pela `api/` (gravada em `history.json` a cada sweep do Health Check). Um F5 na página não perde nenhum dado de tendência; a série continua de onde a API já a mantinha.
 
 ## Dependência exclusiva da API
 

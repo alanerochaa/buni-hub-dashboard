@@ -19,6 +19,16 @@ const TIME_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
 
 const MONITORED_ENVIRONMENT = resolveEnvironmentLabel(env.apiBaseUrl)
 
+// Cor de identificação do ambiente monitorado — deliberadamente fora da
+// paleta de status (STATUS_CONFIG), para nunca ser lida como "saúde do
+// sistema": é só identidade, mesmo espírito do avatar/logo no header.
+const ENVIRONMENT_BADGE_COLORS: Record<string, string> = {
+  Desenvolvimento: '#60A5FA',
+  Homologação: '#A78BFA',
+  Produção: '#2DD4BF',
+}
+const ENVIRONMENT_BADGE_COLOR = ENVIRONMENT_BADGE_COLORS[MONITORED_ENVIRONMENT] ?? DASHBOARD_COLORS.textMuted
+
 /**
  * Uma única linha, altura mínima — logo, ambiente monitorado e
  * horário, nada além disso (sem status, sem contagens: ambos vivem na
@@ -29,7 +39,7 @@ export function DashboardHeader({ dataUpdatedAt }: DashboardHeaderProps) {
 
   return (
     <header
-      className="flex h-16 shrink-0 items-center justify-between border-b px-6 lg:px-8"
+      className="flex h-14 shrink-0 items-center justify-between border-b px-6 lg:px-8"
       style={{ borderColor: DASHBOARD_COLORS.border, backgroundColor: DASHBOARD_COLORS.surfaceSunken }}
     >
       <div className="flex items-center gap-3">
@@ -56,9 +66,13 @@ export function DashboardHeader({ dataUpdatedAt }: DashboardHeaderProps) {
           <p className="text-[0.625rem] tracking-[0.14em] uppercase" style={{ color: DASHBOARD_COLORS.textFaint }}>
             Ambiente
           </p>
-          <p className="text-sm font-semibold" style={{ color: DASHBOARD_COLORS.text }}>
+          <span
+            className="mt-0.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide uppercase"
+            style={{ color: ENVIRONMENT_BADGE_COLOR, backgroundColor: `${ENVIRONMENT_BADGE_COLOR}22` }}
+          >
+            <span className="size-1.5 rounded-full" style={{ backgroundColor: ENVIRONMENT_BADGE_COLOR }} />
             {MONITORED_ENVIRONMENT}
-          </p>
+          </span>
         </div>
 
         <div className="text-right">
@@ -71,7 +85,7 @@ export function DashboardHeader({ dataUpdatedAt }: DashboardHeaderProps) {
         </div>
 
         <div className="text-right">
-          <p className="font-mono text-2xl leading-none font-bold tabular-nums" style={{ color: DASHBOARD_COLORS.text }}>
+          <p className="font-mono text-xl leading-none font-semibold tabular-nums" style={{ color: DASHBOARD_COLORS.text }}>
             {TIME_FORMATTER.format(now)}
           </p>
           <p className="text-[0.6875rem] tabular-nums" style={{ color: DASHBOARD_COLORS.textSubtle }}>
