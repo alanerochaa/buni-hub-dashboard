@@ -9,23 +9,6 @@ import { useClock } from '@/hooks/useClock'
 import { useDashboard } from '@/hooks/useDashboard'
 import { useOperationalHistory } from '@/hooks/useOperationalHistory'
 
-/**
- * Modo TV: `h-screen overflow-hidden` na página — nenhuma rolagem em
- * lugar nenhum (requisito de NOC: tudo visível sem interação). Três
- * linhas, de cima para baixo:
- *
- * 1. `OverviewBand` — faixa de KPIs compacta, altura fixa.
- * 2. `IncidentsPanel` (~60%) + `HistoryPanel` (~40%) lado a lado, em
- *    CSS Grid: a altura da linha é dada pelo maior dos dois — hoje o
- *    Histórico (que tem uma altura mínima própria, generosa, para o
- *    gráfico ter prioridade visual); `IncidentsPanel` estica para
- *    acompanhar via `align-items: stretch` (padrão do Grid) e
- *    centraliza sua tabela verticalmente quando há poucos incidentes.
- * 3. `CategoryDistributionTable` — a única linha com `flex-1`: absorve
- *    todo o espaço vertical que sobrar depois das duas linhas acima,
- *    para a tela ficar sempre preenchida até o rodapé, sem vazio morto,
- *    em qualquer altura de viewport.
- */
 export function DashboardPage() {
   const { data, isLoading, error, dataUpdatedAt } = useDashboard()
   const now = useClock()
@@ -58,7 +41,7 @@ export function DashboardPage() {
       <DashboardHeader dataUpdatedAt={dataUpdatedAt} />
 
       <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
-        <div className="h-[112px] shrink-0">
+        <div className="shrink-0">
           <OverviewBand summary={data.summary} />
         </div>
 

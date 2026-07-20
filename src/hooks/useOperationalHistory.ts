@@ -12,15 +12,7 @@ export interface UseOperationalHistoryResult {
   error: string | null
 }
 
-/**
- * Histórico Operacional — substitui o antigo histórico de sessão
- * (acumulado em memória do navegador, perdido a cada reload). Os
- * snapshots já vêm persistidos e prontos do Backend (`GET
- * /dashboard/history`); este hook só mapeia `HistorySnapshot` para o
- * formato que `HistoryPanel` já consumia (`AvailabilityPoint`), sem
- * alterar o componente visual. Mesmo padrão de polling de
- * `useDashboard` — dados de servidor, não client-side.
- */
+
 export function useOperationalHistory(): UseOperationalHistoryResult {
   const query = useQuery({
     queryKey: ['dashboard', 'history'],

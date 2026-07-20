@@ -1,7 +1,3 @@
-/**
- * "há 18 segundos" / "há 4 minutos" — granularidade em segundos,
- * própria do modo TV do Painel Operacional.
- */
 export function formatElapsed(fromMs: number, nowMs: number): string {
   if (!fromMs) return '—'
   const diffSeconds = Math.max(0, Math.round((nowMs - fromMs) / 1000))

@@ -1,11 +1,5 @@
 import { DASHBOARD_COLORS } from '@/constants'
 
-/**
- * Rodapé fino — só crédito institucional, sem nenhum dado operacional
- * (nada aqui muda com o polling). Altura um pouco maior que o mínimo
- * técnico (`h-7`, não `h-5`) para nunca parecer "grudado" no último
- * card, mesmo quando o conteúdo acima preenche quase toda a tela.
- */
 export function DashboardFooter() {
   return (
     <footer

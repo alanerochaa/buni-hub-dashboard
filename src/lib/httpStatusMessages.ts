@@ -1,10 +1,3 @@
-/**
- * Mensagens amigáveis por status HTTP — usadas apenas quando o
- * Backend não envia `message` no corpo do erro (ver
- * middleware/errorHandler.ts na API, que hoje sempre envia). Mantido
- * como rede de segurança para qualquer resposta fora do envelope
- * padrão (ex.: erro de infraestrutura antes mesmo de chegar à API).
- */
 export const HTTP_STATUS_MESSAGES: Record<number, string> = {
   400: 'Preencha todos os campos obrigatórios corretamente.',
   401: 'Você não possui autorização para realizar esta operação.',

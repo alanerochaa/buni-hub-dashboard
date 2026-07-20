@@ -13,11 +13,6 @@ export interface UseDashboardResult {
   dataUpdatedAt: number
 }
 
-/**
- * Polling fixo de 30s, sem depender de interação (requisito do modo
- * TV). `refetchIntervalInBackground` mantém a atualização mesmo com a
- * aba em segundo plano.
- */
 export function useDashboard(): UseDashboardResult {
   const query = useQuery({
     queryKey: ['dashboard'],

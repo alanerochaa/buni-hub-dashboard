@@ -6,11 +6,6 @@ function easeOutQuad(t: number): number {
   return 1 - (1 - t) * (1 - t)
 }
 
-/**
- * Anima do valor anterior até `target` (nunca a partir de 0, para não
- * "reiniciar" a cada polling). Pula direto para o final com
- * `prefers-reduced-motion`.
- */
 export function useCountUp(target: number): number {
   const [display, setDisplay] = useState(target)
   const fromRef = useRef(target)

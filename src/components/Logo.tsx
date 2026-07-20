@@ -5,7 +5,7 @@ export function Logo() {
     <img
       src={logoWhite}
       alt="Buni"
-      className="mr-1 h-18 w-auto shrink-0 select-none sm:mr-2 sm:h-[4.875rem]"
+      className="h-12 w-auto shrink-0 select-none"
     />
   )
 }

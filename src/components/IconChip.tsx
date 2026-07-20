@@ -13,12 +13,7 @@ const SIZE_CLASSES = {
   md: 'size-7',
 } as const
 
-/**
- * Ícone contido num pequeno quadrado com fundo/borda sutis — usado nas
- * colunas de tipo de recurso (Distribuição por Categoria, Recursos que
- * Exigem Atenção) para dar mais peso visual ao ícone do que um glifo
- * solto, sem introduzir cor nova (usa a própria superfície elevada).
- */
+
 export function IconChip({ children, color = DASHBOARD_COLORS.textMuted, size = 'md' }: IconChipProps) {
   return (
     <span

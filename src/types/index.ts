@@ -1,8 +1,3 @@
-/**
- * Espelha api/src/types/dashboard.type.ts — duplicado de propósito
- * (dashboard/ e api/ são projetos Node independentes, sem pacote
- * compartilhado).
- */
 export type ResourceType = 'api' | 'web-service' | 'site'
 export type ResourceEnvironment = 'homologacao' | 'producao' | 'desenvolvimento' | 'unknown'
 
@@ -27,14 +22,19 @@ export interface DashboardSummary {
   lastSweepAt: string | null
 }
 
-export interface DashboardIncident {
-  id: string
-  name: string
-  type: ResourceType
+export interface DashboardIncidentEnvironment {
   environment: ResourceEnvironment
   status: DashboardResourceStatus
   lastCheckedAt: string
   offlineSince?: string
+}
+
+export interface DashboardIncident {
+  id: string
+  name: string
+  type: ResourceType
+  status: DashboardResourceStatus
+  environments: DashboardIncidentEnvironment[]
 }
 
 export interface DashboardResponse {
@@ -42,11 +42,6 @@ export interface DashboardResponse {
   incidents: DashboardIncident[]
 }
 
-/**
- * Espelha api/src/models/history.model.ts (HistorySnapshot) — Histórico
- * Operacional, persistido pelo Backend em `history.json` a cada sweep
- * do Health Check (ver GET /dashboard/history).
- */
 export interface HistorySnapshot {
   timestamp: string
   total: number
@@ -57,7 +52,6 @@ export interface HistorySnapshot {
   availabilityPercentage: number
 }
 
-/** Forma consumida por HistoryPanel — `timestamp` já em milissegundos. */
 export interface AvailabilityPoint {
   timestamp: number
   value: number

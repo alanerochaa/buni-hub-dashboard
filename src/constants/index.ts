@@ -1,14 +1,5 @@
 import type { DashboardResourceStatus, ResourceEnvironment, ResourceType } from '../types'
 
-/**
- * Paleta escura própria deste projeto (nunca em assets/styles/index.css
- * como tema global) — hierarquia por camadas (bg → surface →
- * surfaceElevated), nunca por saturação, referência NOC/financeira.
- *
- * Contraste validado com a skill dataviz: `text`/`textMuted`/`textSubtle`
- * ≥ 4.5:1 sobre `surface`/`surfaceElevated`. `textFaint` fica abaixo de
- * propósito — só para elementos decorativos, nunca texto legível.
- */
 export const DASHBOARD_COLORS = {
   bg: '#0B0F17',
   surface: '#131A24',
@@ -22,24 +13,12 @@ export const DASHBOARD_COLORS = {
   textFaint: '#5B6472',
 } as const
 
-/**
- * Sombra única, reutilizada por todo painel de superfície (`surface`)
- * — profundidade sutil (elevação sobre `bg`), não um efeito chamativo.
- * Mesma sombra em todo o dashboard para manter consistência "premium"
- * sem introduzir variação visual desnecessária entre componentes.
- */
 export const PANEL_SHADOW =
   '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 12px 32px -16px rgba(0,0,0,0.6)'
 
-/** Título de seção padrão — mesmo peso/tamanho em todos os painéis. */
-export const SECTION_TITLE_CLASSES = 'text-sm font-semibold tracking-wide uppercase'
+export const SECTION_TITLE_CLASSES = 'text-sm font-semibold'
 
-/**
- * Escala fixa e reservada, nunca reaproveitada como cor categórica.
- * "base": fundos translúcidos; "bright": texto/ícone/gráfico (≥ 5:1
- * sobre as superfícies). Tons deliberadamente menos saturados que um
- * alerta genérico.
- */
+
 export const STATUS_CONFIG: Record<
   DashboardResourceStatus,
   { label: string; base: string; bright: string }
@@ -50,8 +29,6 @@ export const STATUS_CONFIG: Record<
   unknown: { label: 'Desconhecido', base: '#64748B', bright: '#94A3B8' },
 }
 
-// Ordem de leitura da tabela de incidentes e dos gráficos — decisão de
-// apresentação (frontend), não altera o que a API retorna.
 export const INCIDENT_STATUS_ORDER: DashboardResourceStatus[] = [
   'offline',
   'maintenance',
@@ -82,4 +59,11 @@ export const RESOURCE_ENVIRONMENT_LABELS: Record<ResourceEnvironment, string> = 
   producao: 'Produção',
   desenvolvimento: 'Desenvolvimento',
   unknown: 'Desconhecido',
+}
+
+export const RESOURCE_ENVIRONMENT_SHORT_LABELS: Record<ResourceEnvironment, string> = {
+  homologacao: 'HML',
+  producao: 'PRD',
+  desenvolvimento: 'DEV',
+  unknown: '—',
 }
