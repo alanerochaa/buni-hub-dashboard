@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 const envSchema = z.object({
-  VITE_API_BASE_URL: z.url().default('http://localhost:3333'),
+  VITE_API_URL: z.url().default('http://localhost:3333'),
 })
 
 const parsed = envSchema.safeParse(import.meta.env)
@@ -11,5 +11,5 @@ if (!parsed.success) {
 }
 
 export const env = {
-  apiBaseUrl: parsed.data.VITE_API_BASE_URL,
+  apiBaseUrl: parsed.data.VITE_API_URL,
 }
