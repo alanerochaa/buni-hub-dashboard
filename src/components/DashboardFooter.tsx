@@ -7,7 +7,15 @@ export function DashboardFooter() {
       style={{ borderColor: DASHBOARD_COLORS.border, backgroundColor: DASHBOARD_COLORS.surfaceSunken }}
     >
       <p className="text-xs" style={{ color: DASHBOARD_COLORS.textFaint }}>
-        Desenvolvido por <span className="font-semibold">Catarse Tecnologia & Consultoria</span>
+        Desenvolvido por{' '}
+        <a
+          href="https://catarse.co/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold cursor-pointer hover:underline"
+        >
+          Catarse Tecnologia & Consultoria
+        </a>
       </p>
     </footer>
   )
